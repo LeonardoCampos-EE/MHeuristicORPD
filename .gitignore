@@ -1,0 +1,11 @@
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+__pycache__
+*/__pycache__/*
+.vscode
+*/.vscode/*
+
+dataVisualization.py
+mhORPD.py
+networkProcessing.py
+orpdProblem.py
