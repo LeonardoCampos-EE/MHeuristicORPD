@@ -5,5 +5,8 @@ Now containing:
 * Algorithms:
     > Grey Wolf Optimizer (GWO)
 
+* Benchmark Functions:
+    > Rosenbrock function
+
 * Visualization:
-    > 3D convergence process on Rosenbrock Function
+    > 3D convergence process on benchmark functions

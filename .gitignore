@@ -5,7 +5,4 @@ __pycache__
 .vscode
 */.vscode/*
 
-dataVisualization.py
-mhORPD.py
-networkProcessing.py
-orpdProblem.py
+legacy/

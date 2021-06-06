@@ -93,8 +93,5 @@ class Optimizer:
     def calculate_fitness(self):
         raise NotImplementedError
 
-
-if __name__ == '__main__':
-
-    pass
-
+    def visualize_benchmark(self):
+        raise NotImplementedError
