@@ -36,7 +36,7 @@ class BenchmarkFunction:
 
         # Update layout
         surface.update_layout(
-            template="plotly_white",
+            template="plotly_dark",
             title=name,
             autosize=False,
             width=fig_size[0],
@@ -58,7 +58,7 @@ class BenchmarkFunction:
                 "pad": {"b": 10, "t": 60},
                 "type": "buttons",
                 "x": 0.1,
-                "y": 0.2,
+                "y": 0.1,
                 "buttons": [
                     # Play button
                     {
@@ -89,7 +89,7 @@ class BenchmarkFunction:
                                 },
                             },
                         ],
-                        "label": "Pause;",  # pause symbol
+                        "label": "Pause",  # pause symbol
                         "method": "animate",
                     },
                 ],
@@ -141,14 +141,14 @@ class BenchmarkFunction:
                 "active": 0,
                 "transition": {"duration": 300, "easing": "cubic-in-out"},
                 "currentvalue": {
-                    "font": {"size": 20},
-                    "prefix": "Iteration:",
+                    "font": {"size": 12},
+                    "prefix": "t = ",
                     "visible": True,
-                    "xanchor": "right",
+                    "xanchor": "left",
                 },
                 "pad": {"b": 10, "t": 60},
                 "len": 0.9,
-                "x": 0.1,
+                "x": 0.2,
                 "y": 0,
                 "steps": [
                     {

@@ -1,45 +1,28 @@
-import numpy as np
 from heuristics.gwo import GWO
-import rosenbrockProblem as rp
+from benchmark.functions import Rosenbrock
+import numpy as np
 
-if __name__ == '__main__':
-    upB = np.array([
-        [1.5, 2.5]
-    ])
+if __name__ == "__main__":
+    upper_bound = np.expand_dims(np.array([1.5, 2.5]), axis=-1)
+    lower_bound = np.expandlower_bound = np.expand_dims(np.array([-1.5, -0.5]), axis=-1)
 
-    lwB = np.array([
-        [-1.5, -0.5]
-    ])
+    rosen = Rosenbrock(lower_bound=lower_bound, upper_bound=upper_bound)
 
-    gwo_optimizer = GWO(
-        population_size = 20,
-        dim = 2,
-        objective_function = None,
-        constraints = None,
-        upper_bounds = upB,
-        lower_bounds = lwB
+    # rosen.visualize_surface(opacity=1.0, color="Thermal")
+
+    solution = 1.0
+    gwo = GWO(
+        population_size=10,
+        dim=2,
+        objective_function=rosen.function,
+        lower_bounds=lower_bound,
+        upper_bounds=upper_bound,
     )
+    while solution > 1e-2:
+        gwo.optimize(iterations=50)
+        solution = gwo.best_fitness[-1]
 
-    popArray, popParams = mh.initPopulation(20, 2, 0, upB, lwB)
-    solution, convCurves, tensors = mh.GWO(popArray, popParams, tMax = 20, objectiveFunc = rp.rosenbrockFunc)
-
-    while (solution['bestObj'] > 1e-4):
-        popArray, popParams = mh.initPopulation(20, 2, 0, upB, lwB)
-        solution, convCurves, tensors = mh.GWO(popArray, popParams, tMax = 20, objectiveFunc = rp.rosenbrockFunc)
-
-    popTensor = tensors['pop']
-    bestTensor = tensors['best']
-
-    x = np.linspace(-1.5, 1.5)
-    y = np.linspace(-0.5, 2.5)
-    surfaceArray = np.stack((x,y), axis = 0)
-
-    globalOptima = np.array([
-        [1.0],
-        [1.0],
-        [0.0]
-    ])
-
-    rp.showAnimation(surfaceArray, globalOptima, popTensor, bestTensor, 
-    figSize = (1600, 900), opacity = 0.7, frameDuration = 500)
-
+    rosen.visualize_search(
+        pop_array=gwo.pop_list,
+        best_agents_array=gwo.best_agents_list,
+    )
