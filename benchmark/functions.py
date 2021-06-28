@@ -53,12 +53,15 @@ class BenchmarkFunction:
 
         buttons = [
             {
+                "showactive": False,
+                "bgcolor": "rgb(255, 255, 255)",
                 "type": "buttons",
                 "direction": "left",
                 "pad": {"b": 10, "t": 60},
                 "type": "buttons",
                 "x": 0.1,
                 "y": 0.1,
+                "font": {"color": "rgb(0, 0, 0)"},
                 "buttons": [
                     # Play button
                     {
@@ -105,7 +108,7 @@ class BenchmarkFunction:
 
         frames = [
             go.Frame(
-                name = str(t),
+                name=str(t),
                 data=[
                     # Population array for iteration t
                     go.Scatter3d(
