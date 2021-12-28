@@ -1,7 +1,7 @@
 import pypsa as psa
 
 
-class PyPsaImplementation:
+class PowerSystemManager:
     def __init__(self, system):
 
         return
