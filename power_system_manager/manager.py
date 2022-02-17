@@ -1,9 +1,11 @@
+import pdb
+
 import pandapower as pp
 import numpy as np
 
 
 class PowerSystemManager:
-    def __init__(self, system):
+    def __init__(self, system: str) -> None:
 
         self.system = system
 
@@ -99,18 +101,18 @@ class PowerSystemManager:
 
         # Get the lines resistance in pu
         # r_pu = r_ohm / z_base
-        self.lines["r_pu"] = np.zeros(shape=(1, self.network.line.index[-1] + 1))
+        self.lines["r_pu"] = np.zeros(shape=(self.network.line.index[-1] + 1,))
         for i in range(self.network.line.index[-1] + 1):
             self.lines["r_pu"][i] = (
-                self.network.line.r_ohm_per_km[i] / z_base[self.lines["start"][i]]
+                self.network.line.r_ohm_per_km.iloc[i] / z_base[self.lines["start"][i]]
             )
 
         # Get the lines reactances in pu
         # x_pu = x_ohm / z_base
-        self.lines["x_pu"] = np.zeros(shape=(1, self.network.line.index[-1] + 1))
+        self.lines["x_pu"] = np.zeros(shape=(self.network.line.index[-1] + 1,))
         for i in range(self.network.line.index[-1] + 1):
             self.lines["x_pu"][i] = (
-                self.network.line.x_ohm_per_km[i] / z_base[self.lines["start"][i]]
+                self.network.line.x_ohm_per_km.iloc[i] / z_base[self.lines["start"][i]]
             )
 
         return
@@ -187,13 +189,13 @@ class PowerSystemManager:
     def get_shunt_masks(self):
 
         if self.system == "14":
-            self.shunt_values = np.array([[0.25, 0.25, 0.25, 0.25]])
+            self.shunt_masks = np.array([[0.25, 0.25, 0.25, 0.25]])
         elif self.system == "30":
-            self.shunt_values = np.array(
+            self.shunt_masks = np.array(
                 [[0.25, 0.25, 0.25, 0.25], [0.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0]]
             )
         elif self.system == "57":
-            self.shunt_values = np.array(
+            self.shunt_masks = np.array(
                 [
                     [0.25, 0.25, 0.25, 0.25],
                     [0.25, 0.25, 0.25, 0.25],
@@ -201,7 +203,7 @@ class PowerSystemManager:
                 ]
             )
         elif self.system == "118":
-            self.shunt_values = np.array(
+            self.shunt_masks = np.array(
                 [
                     [0.5, 0.5, 0.0, 0.0, 0.0, 0.0],
                     [1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0],
@@ -220,7 +222,7 @@ class PowerSystemManager:
                 ]
             )
         elif self.system == "300":
-            self.shunt_values = np.array(
+            self.shunt_masks = np.array(
                 [
                     [0.25, 0.25, 0.25, 0.25],
                     [0.25, 0.25, 0.25, 0.25],
@@ -267,6 +269,35 @@ class PowerSystemManager:
         self.first_agent["v"] = v
         self.first_agent["taps"] = taps
         self.first_agent["shunts"] = shunts
+
+        return
+
+    def insert_voltages_from_agent(self, agent: np.ndarray):
+        self.network.gen.vm_pu = agent[: self.ng]
+        return
+
+    def insert_taps_from_agent(self, agent: np.ndarray):
+        """
+        The transformer taps should be inserted as position values, instead of
+        their pu values. To convert from pu to position:
+            tap_pos = [(tap_pu - 1)*100]/tap_step_percent] + tap_neutral
+        """
+        self.network.trafo.tap_pos[: self.nt] = self.network.trafo.tap_neutral[
+            : self.nt
+        ] + (
+            (agent[self.ng : self.ng + self.nt] - 1.0)
+            * (100 / self.network.trafo.tap_step_percent[: self.nt])
+        )
+        return
+
+    def insert_shunts_from_agent(self, agent: np.ndarray):
+        """
+        The shunt unit on the network is MVAr and it has a negative value
+        To convert from pu to MVAr negative:
+            mvar = pu * -100
+
+        """
+        self.network.shunt.q_mvar = agent[self.ng + self.nt :] * (-100)
 
         return
 
