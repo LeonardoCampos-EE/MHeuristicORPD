@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Optimizer:
     def __init__(
         self,
@@ -23,36 +24,39 @@ class Optimizer:
                 Number of variables of the optimization problem
                 (dimensionality of the problem)
 
-            * constraints (list):
-                List with the contraint functions of the optimization problem
+            * constraints (dict):
+                Dict with the contraint functions of the optimization problem
+                $ {"voltage": voltage_function}
 
-            * upper_bounds (numpy.ndarray - float64):
+            * upper_bounds (numpy.ndarray - float32):
                 Numpy array containing the variables upper limits
                 $ (dim, 1)
 
-            * lower_bounds (numpy.ndarray - float64):
+            * lower_bounds (numpy.ndarray - float32):
                 Numpy array containing the variables lower limits
                 $ (dim, 1)
 
             ----------------- Returns -----------------
-            * pop_array (numpy.ndarray - float64):
+            * pop_array (numpy.ndarray - float32):
                 Population array with the following dimensionality:
                 $ (dim, population_size)
 
-            * constraint_array (numpy.ndarray - float64):
-                Array containing the values of each constraint for
+            * constraint_arrays (dict):
+                Dictionary containing the values of each constraint for
                 each search agent
-                $ (len(constraints), population_size)
+                $ constraint_arrays = {
+                    "voltage": np.array() -> shape = (population_size, )
+                }
 
-            * objective_array (numpy.ndarray - float64):
+            * objective_array (numpy.ndarray - float32):
                 Array containing the values of the objective function
                 for each search agent
-                $ (1, population_size)
+                $ (population_size,)
 
-            * fitness_array (numpy.ndarray - float64):
+            * fitness_array (numpy.ndarray - float32):
                 Array containing the values of the fitness function
                 for each search agent
-                $ (1, population_size)
+                $ (population_size, )
         """
 
         # Save the input parameters as class properties
@@ -68,14 +72,17 @@ class Optimizer:
 
         # Randomly intializes the population array on the interval [lower_bounds, upper_bounds)
         self.pop_array = (upper_bounds - lower_bounds) * self.random_gen.random(
-            size=(dim, population_size), dtype=np.float64
+            size=(dim, population_size), dtype=np.float32
         ) + lower_bounds
 
         # Initialize the constraints function array
         if constraints is not None:
-            self.constraint_array = np.zeros(shape=(len(constraints), population_size))
+            self.constraint_arrays = {
+                constraint_name: np.zeros(shape=(population_size,))
+                for constraint_name in self.constraints.keys()
+            }
         else:
-            self.constraint_array = np.zeros(shape=(population_size,))
+            self.constraint_array = None
 
         # Initialize the objective function array
         self.objective_array = np.ones(shape=(1, population_size)) * np.inf

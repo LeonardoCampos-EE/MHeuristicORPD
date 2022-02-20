@@ -2,4 +2,6 @@ scipy
 numpy
 pandas
 plotly
-
+pandapower
+pyyaml
+numba

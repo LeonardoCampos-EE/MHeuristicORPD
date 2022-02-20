@@ -75,11 +75,11 @@ class PowerSystemManager:
         # Get the shunt masks
         self.get_shunt_masks()
 
-        # Get the first search agent position
-        self.get_first_agent()
-
         # Get the trafo taps values
         self.get_tap_values()
+
+        # Get the first search agent position
+        self.get_first_agent()
 
         return
 
@@ -249,6 +249,36 @@ class PowerSystemManager:
 
         return
 
+    def get_upper_bounds(self) -> np.ndarray:
+
+        voltage_upper = [1.1] * self.ng
+        taps_upper = [np.max(self.tap_values)] * self.nt
+        shunts_upper = [np.max(shunt_arr) for shunt_arr in self.shunt_values]
+
+        upper_bounds = np.array(
+            [*voltage_upper, *taps_upper, *shunts_upper], dtype=np.float32
+        )
+
+        # Convert from (n,) to (n, 1)
+        upper_bounds = np.expand_dims(upper_bounds, axis=1)
+
+        return upper_bounds
+
+    def get_lower_bounds(self) -> np.ndarray:
+
+        voltage_lower = [0.9] * self.ng
+        taps_lower = [np.min(self.tap_values)] * self.nt
+        shunts_lower = [np.min(shunt_arr) for shunt_arr in self.shunt_values]
+
+        lower_bounds = np.array(
+            [*voltage_lower, *taps_lower, *shunts_lower], dtype=np.float32
+        )
+
+        # Convert from (n,) to (n, 1)
+        lower_bounds = np.expand_dims(lower_bounds, axis=1)
+
+        return lower_bounds
+
     def get_first_agent(self):
 
         v = self.network.gen.vm_pu.to_numpy(dtype=np.float32)
@@ -266,10 +296,9 @@ class PowerSystemManager:
         )
         shunts = -self.network.shunt.q_mvar.to_numpy(dtype=np.float32) / 100
 
-        self.first_agent = {}
-        self.first_agent["v"] = v
-        self.first_agent["taps"] = taps
-        self.first_agent["shunts"] = shunts
+        import pdb
+
+        self.first_agent = np.concatenate([v, taps, shunts]).astype(np.float32)
 
         return
 
@@ -387,7 +416,7 @@ class PowerSystemManager:
             obj_fun_array[index] = loss
 
             # Calculate the penalty for the agent
-            penalty_array_dict["voltage", index] = kwargs[
+            penalty_array_dict["voltage"][index] = kwargs[
                 "voltage_penalty_lambda"
             ] * penalty_functions["voltage"](self.network)
 

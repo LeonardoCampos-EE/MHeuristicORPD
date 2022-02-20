@@ -1,0 +1,12 @@
+name: experiment_1
+system:
+    num_buses: 14
+    tap_step: 0.00625
+orpd:
+    run_dc_power_flow: False
+    voltage_penalty_lambda: 100.0
+    taps_penalty_lambda: 100.0
+    shunts_penalty_lambda: 100.0
+optimizer:
+    pop_size: 14
+    iterations: 20

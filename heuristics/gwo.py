@@ -10,8 +10,8 @@ from heuristics.optimizer import Optimizer
 class GWO(Optimizer):
     def __init__(
         self,
-        population_size,
-        dim,
+        population_size: int,
+        dim: int,
         objective_function,
         constraints=None,
         upper_bounds=None,
@@ -35,7 +35,10 @@ class GWO(Optimizer):
 
         # Initialize the parameters of the best agent
         self.best_objective = []
-        self.best_constraint = []
+        if self.constraints is not None:
+            self.best_constraint = {
+                contraint_name: [] for contraint_name in self.constraints
+            }
         self.best_fitness = []
 
         # Main loop
@@ -52,10 +55,10 @@ class GWO(Optimizer):
 
                 # r1 and r2 -> random numbers between 0 and 1
                 self.r1 = self.random_gen.random(
-                    size=(self.dim, self.population_size), dtype=np.float64
+                    size=(self.dim, self.population_size), dtype=np.float32
                 )
                 self.r2 = self.random_gen.random(
-                    size=(self.dim, self.population_size), dtype=np.float64
+                    size=(self.dim, self.population_size), dtype=np.float32
                 )
 
                 # A(t) -> controls the step size of each wolf in the search space
@@ -65,25 +68,32 @@ class GWO(Optimizer):
                 self.C_t = 2 * self.r2
 
                 # Calculate the objective function
-                if kwargs["is_orpd"]:
+                if not kwargs["is_orpd"]:
                     self.objective_array = self.objective_function(self.pop_array)
                 else:
                     # ORPD case
                     self.objective_array = self.objective_function(
-                        self.pop_array, self.constraint_array, kwargs
+                        self.pop_array,
+                        self.constraint_arrays,
+                        self.constraints,
+                        **kwargs,
                     )
 
                 # Calculate the constraints
-                if self.constraints is not None:
-                    for idx, constraint in enumerate(self.constraints):
-                        self.constraint_array[idx, :] = constraint(self.pop_array)
+                if self.constraints is not None and not kwargs["is_orpd"]:
+                    for contraint_name, constraint_function in self.constraints.items():
+                        self.constraint_arrays[contraint_name] = constraint_function(
+                            self.pop_array
+                        )
 
                 # Calculate the fitness function
-                self.fitness_array = (
-                    self.objective_array + self.constraint_array.sum(axis=1)
-                    if self.constraints
-                    else self.objective_array
-                )
+
+                if self.constraints is not None:
+                    self.fitness_array = self.objective_array
+                    for constraint in self.constraint_arrays.values():
+                        self.fitness_array += constraint
+                else:
+                    self.fitness_array = self.objective_array
 
                 # Get the indexes that would sort the fitness_array to get the best solutions of this iteration
                 sort_indexes = np.argsort(self.fitness_array)
@@ -94,12 +104,15 @@ class GWO(Optimizer):
 
                 # Keep track of alpha's objective, penalty and fitness functions
                 self.best_objective.append(self.objective_array[self.alpha_index])
-                if self.constraints:
-                    self.best_constraint.append(
-                        np.sum(self.constraint_array[:, self.alpha_index])
-                    )
-                else:
-                    self.best_constraint.append([0.0])
+                if self.constraints is not None:
+                    for (
+                        constraint_name,
+                        constraint_array,
+                    ) in self.constraint_arrays.items():
+                        self.best_constraint[constraint_name].append(
+                            constraint_array[self.alpha_index]
+                        )
+
                 self.best_fitness.append(self.fitness_array[self.alpha_index])
 
                 tq.set_description(
@@ -132,8 +145,13 @@ class GWO(Optimizer):
 
         print("---------------- Solution ----------------")
         print(
-            f"Fitness = {self.fitness_array[self.alpha_index]}; Objective = {self.objective_array[self.alpha_index]}; Constraint = {self.constraint_array[self.alpha_index]}"
+            f"Fitness = {np.min(self.best_fitness)}; Objective = {np.min(self.best_objective)}"
         )
+        for constraint_name in self.constraints.keys():
+            print(
+                f"Contraint {constraint_name} : {np.min(self.best_constraint[constraint_name])}"
+            )
+
         print(f"Best agent = {self.pop_array[:, self.alpha_index]}")
         print(f"Execution time = {execution_time}")
 

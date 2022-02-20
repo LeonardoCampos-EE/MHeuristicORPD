@@ -1,3 +1,5 @@
+import pdb
+
 import pandas as pd
 import numpy as np
 
@@ -55,6 +57,7 @@ def taps_sinusoidal_penalty(taps: np.ndarray, s: float) -> np.ndarray:
 
     # For numerical reasons, we may consider 0.0 any value below 10^-12
     penalty = np.where(penalty < 1e-12, 0.0, penalty)
+    penalty = np.sum(penalty, axis=0)
 
     return penalty
 
@@ -79,5 +82,6 @@ def shunts_sinusoidal_penalty(
     penalty = np.sin(alpha + np.pi * (shunts / delta))
     penalty = np.square(penalty)
     penalty = np.where(penalty < 1e-5, 0.0, penalty)
+    penalty = np.squeeze(penalty, axis=0)
 
     return penalty
