@@ -26,7 +26,7 @@ class GWO(Optimizer):
             lower_bounds,
         )
 
-    def optimize(self, iterations):
+    def optimize(self, iterations, **kwargs):
 
         # Keep all the agents througout the iterations for demonstrantion
         # Shape: (tmax, dim + 1, pop_size)
@@ -65,7 +65,13 @@ class GWO(Optimizer):
                 self.C_t = 2 * self.r2
 
                 # Calculate the objective function
-                self.objective_array = self.objective_function(self.pop_array)
+                if kwargs["is_orpd"]:
+                    self.objective_array = self.objective_function(self.pop_array)
+                else:
+                    # ORPD case
+                    self.objective_array = self.objective_function(
+                        self.pop_array, self.constraint_array, kwargs
+                    )
 
                 # Calculate the constraints
                 if self.constraints is not None:
@@ -89,9 +95,11 @@ class GWO(Optimizer):
                 # Keep track of alpha's objective, penalty and fitness functions
                 self.best_objective.append(self.objective_array[self.alpha_index])
                 if self.constraints:
-                    self.best_constraint.append(self.constraint_array[self.alpha_index])
+                    self.best_constraint.append(
+                        np.sum(self.constraint_array[:, self.alpha_index])
+                    )
                 else:
-                    self.best_constraint.append([0])
+                    self.best_constraint.append([0.0])
                 self.best_fitness.append(self.fitness_array[self.alpha_index])
 
                 tq.set_description(

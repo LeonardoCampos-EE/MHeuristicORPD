@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 
+from utils.math import upper_discrete, lower_discrete
+
 
 def voltage_static_penalty(network: pd.DataFrame) -> float:
 
@@ -53,5 +55,29 @@ def taps_sinusoidal_penalty(taps: np.ndarray, s: float) -> np.ndarray:
 
     # For numerical reasons, we may consider 0.0 any value below 10^-12
     penalty = np.where(penalty < 1e-12, 0.0, penalty)
+
+    return penalty
+
+
+def shunts_sinusoidal_penalty(
+    shunts: np.ndarray, shunt_values: np.ndarray
+) -> np.ndarray:
+
+    shunts_upper = np.zeros_like(shunts)
+    shunts_lower = np.zeros_like(shunts)
+
+    for index, list_of_values in enumerate(shunt_values):
+        shunts_upper[index] = upper_discrete(shunts[index], list_of_values)
+        shunts_lower[index] = lower_discrete(shunts[index], list_of_values)
+
+    delta = np.abs(shunts_upper - shunts_lower)
+
+    alpha = np.pi * (
+        np.ceil(np.abs(shunts_lower) / delta) - np.abs(shunts_lower) / delta
+    )
+
+    penalty = np.sin(alpha + np.pi * (shunts / delta))
+    penalty = np.square(penalty)
+    penalty = np.where(penalty < 1e-5, 0.0, penalty)
 
     return penalty

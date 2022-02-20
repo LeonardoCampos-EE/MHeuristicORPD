@@ -5,7 +5,7 @@ import numpy as np
 
 
 class PowerSystemManager:
-    def __init__(self, system: str) -> None:
+    def __init__(self, system: str, tap_step=0.00625) -> None:
 
         self.system = system
 
@@ -22,6 +22,7 @@ class PowerSystemManager:
 
             self.network = case57()
 
+        self.tap_step = tap_step
         self.get_network_parameters()
 
         return
@@ -242,9 +243,9 @@ class PowerSystemManager:
             )
         return
 
-    def get_tap_values(self, tap_step=0.00625):
+    def get_tap_values(self):
 
-        self.tap_values = np.arange(start=0.9, stop=1.1, step=tap_step)
+        self.tap_values = np.arange(start=0.9, stop=1.1, step=self.tap_step)
 
         return
 
@@ -301,7 +302,33 @@ class PowerSystemManager:
 
         return
 
+    def insert_voltages_on_agent(self, agent: np.ndarray):
+        agent[: self.ng] = self.network.res_gen.vm_pu.to_numpy(dtype=np.float32)
+        return
+
+    def insert_taps_on_agent(self, agent: np.ndarray):
+        agent[self.ng : self.ng + self.nt] = 1 + (
+            (
+                self.network.trafo.tap_pos[: self.nt]
+                - self.network.trafo.tap_neutral[: self.nt]
+            )
+            * (self.network.trafo.tap_step_percent[: self.nt] / 100)
+        )
+
+        return
+
+    def insert_shunts_on_agent(self, agent: np.ndarray):
+        agent[self.ng + self.nt :] = self.network.res_shunt.q_mvar.to_numpy(
+            dtype=np.float32
+        ) / (-100)
+
+        return
+
     def run_ac_power_flow(self, algorithm="nr", use_numba=True, enforce_q_lims=True):
+
+        """
+        Run an AC Power Flow for the network with the given algorithm
+        """
 
         pp.runpp(
             self.network,
@@ -311,3 +338,67 @@ class PowerSystemManager:
         )
 
         return
+
+    def run_dc_power_flow(self):
+
+        """
+        Run a DC Power Flow for the network
+        """
+
+        pp.rundcpp(self.network)
+        return
+
+    def orpd_objective_function(
+        self,
+        agents: np.ndarray,
+        penalty_array_dict: dict,
+        penalty_functions: dict,
+        **kwargs
+    ) -> np.ndarray:
+
+        obj_fun_array = np.zeros(shape=(agents.shape[1]), dtype=np.float32)
+
+        # Transpose agents because each column represents an agent
+        for index, agent in enumerate(agents.T):
+
+            # Update the network
+            self.insert_voltages_from_agent(agent)
+            self.insert_taps_from_agent(agent)
+            self.insert_shunts_from_agent(agent)
+
+            # Run the Power Flow
+            if kwargs["run_dc_power_flow"]:
+                self.run_dc_power_flow()
+            else:
+                self.run_ac_power_flow()
+
+            # Update the agent
+            self.insert_voltages_on_agent(agent)
+            self.insert_taps_on_agent(agent)
+            self.insert_shunts_on_agent(agent)
+
+            # Get the sum of the active power losses of the lines
+            line_loss = self.network.res_line.pl_mw.sum()
+            # Get the sum of the active power losses on the transformers
+            trafo_loss = self.network.res_trafo.pl_mw.sum()
+
+            # Insert the objective funtion value
+            loss = line_loss + trafo_loss
+            obj_fun_array[index] = loss
+
+            # Calculate the penalty for the agent
+            penalty_array_dict["voltage", index] = kwargs[
+                "voltage_penalty_lambda"
+            ] * penalty_functions["voltage"](self.network)
+
+        penalty_array_dict["taps"] = kwargs["taps_penalty_lambda"] * penalty_functions[
+            "taps"
+        ](agents[self.ng : self.ng + self.nt, :], s=self.tap_step)
+
+        penalty_array_dict["shunts"] = kwargs[
+            "shunts_penalty_lambda"
+        ] * penalty_functions["shunts"](
+            agents[self.ng + self.nt :, :], self.shunt_values
+        )
+
+        return obj_fun_array
