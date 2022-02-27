@@ -1,4 +1,4 @@
-name: experiment_1
+name: "Experiment1"
 system:
     num_buses: 14
     tap_step: 0.00625
@@ -8,5 +8,5 @@ orpd:
     taps_penalty_lambda: 100.0
     shunts_penalty_lambda: 100.0
 optimizer:
-    pop_size: 14
-    iterations: 20
+    pop_size: 30
+    iterations: 10

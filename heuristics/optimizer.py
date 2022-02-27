@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 class Optimizer:
@@ -109,3 +110,29 @@ class Optimizer:
 
     def visualize_benchmark(self):
         raise NotImplementedError
+
+    def get_fitness_chart(self, title):
+
+        fig, ax = plt.subplots(1, facecolor="#293952")
+        ax.set_facecolor("#293952")
+
+        x = np.arange(0, len(self.best_fitness), step=1)
+        y = self.best_fitness
+
+        plt.plot(x, y, marker="o", markersize=4, color="#FDAC53", linewidth=1.5)
+
+        ax.tick_params(axis="both", colors="w")
+        plt.xticks(np.arange(0, np.max(x), step=5))
+        plt.yticks(np.arange(0, np.max(y), step=5))
+        plt.xlabel("Iterations", color="w", fontsize=16)
+        plt.ylabel("Fitness Function", color="w", fontsize=16)
+        plt.title(title, color="w", fontsize=16)
+
+        ax.spines["right"].set_visible(False)
+        ax.spines["top"].set_visible(False)
+        ax.spines["left"].set_color("w")
+        ax.spines["bottom"].set_color("w")
+
+        ax.set_axisbelow(True)
+        ax.yaxis.grid(color="#FDAC53", linestyle="dashed", alpha=0.5)
+        plt.show()

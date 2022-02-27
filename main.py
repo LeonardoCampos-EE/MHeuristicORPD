@@ -70,6 +70,7 @@ class ExperimentRunner:
                 "shunts_penalty_lambda"
             ],
         )
+        self.gwo.get_fitness_chart(self.name)
 
         return
 
