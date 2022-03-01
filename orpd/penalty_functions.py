@@ -70,8 +70,12 @@ def shunts_sinusoidal_penalty(
     shunts_lower = np.zeros_like(shunts)
 
     for index, list_of_values in enumerate(shunt_values):
-        shunts_upper[index] = upper_discrete(shunts[index], list_of_values)
-        shunts_lower[index] = lower_discrete(shunts[index], list_of_values)
+        shunts_upper[index] = upper_discrete(
+            shunts[index].copy(), list_of_values.copy()
+        )
+        shunts_lower[index] = lower_discrete(
+            shunts[index].copy(), list_of_values.copy()
+        )
 
     delta = np.abs(shunts_upper - shunts_lower)
 
@@ -82,6 +86,6 @@ def shunts_sinusoidal_penalty(
     penalty = np.sin(alpha + np.pi * (shunts / delta))
     penalty = np.square(penalty)
     penalty = np.where(penalty < 1e-5, 0.0, penalty)
-    penalty = np.squeeze(penalty, axis=0)
+    penalty = np.sum(penalty, axis=0)
 
     return penalty

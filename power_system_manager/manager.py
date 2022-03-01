@@ -251,7 +251,9 @@ class PowerSystemManager:
 
     def get_upper_bounds(self) -> np.ndarray:
 
-        voltage_upper = [1.1] * self.ng
+        voltage_upper = [
+            self.network.bus.max_vm_pu.to_numpy(dtype=np.float32)[0]
+        ] * self.ng
         taps_upper = [np.max(self.tap_values)] * self.nt
         shunts_upper = [np.max(shunt_arr) for shunt_arr in self.shunt_values]
 
@@ -266,7 +268,9 @@ class PowerSystemManager:
 
     def get_lower_bounds(self) -> np.ndarray:
 
-        voltage_lower = [0.9] * self.ng
+        voltage_lower = [
+            self.network.bus.min_vm_pu.to_numpy(dtype=np.float32)[0]
+        ] * self.ng
         taps_lower = [np.min(self.tap_values)] * self.nt
         shunts_lower = [np.min(shunt_arr) for shunt_arr in self.shunt_values]
 
@@ -353,7 +357,7 @@ class PowerSystemManager:
 
         return
 
-    def run_ac_power_flow(self, algorithm="nr", use_numba=True, enforce_q_lims=True):
+    def run_ac_power_flow(self, algorithm="nr", use_numba=True, enforce_q_lims=False):
 
         """
         Run an AC Power Flow for the network with the given algorithm
@@ -363,7 +367,9 @@ class PowerSystemManager:
             self.network,
             algorithm=algorithm,
             numba=use_numba,
+            init="results",
             enforce_q_lims=enforce_q_lims,
+            tolerance_mva=1e-5,
         )
 
         return
@@ -377,6 +383,38 @@ class PowerSystemManager:
         pp.rundcpp(self.network)
         return
 
+    def get_solution(self, agent: np.ndarray) -> tuple:
+
+        self.insert_voltages_from_agent(agent)
+        self.insert_taps_from_agent(agent)
+        self.insert_shunts_from_agent(agent)
+        self.run_ac_power_flow()
+
+        bus_v = self.network.res_bus.vm_pu
+        bus_ang = self.network.res_bus.va_degree
+        taps = 1 + (
+            (
+                self.network.trafo.tap_pos[: self.nt]
+                - self.network.trafo.tap_neutral[: self.nt]
+            )
+            * (self.network.trafo.tap_step_percent[: self.nt] / 100)
+        )
+        shunts = self.network.res_shunt.q_mvar.to_numpy(dtype=np.float32) / (-100)
+
+        return bus_v, bus_ang, taps, shunts
+
+    def initialize_agents(self, agents: np.ndarray):
+
+        agents[self.ng : self.ng + self.nt, :] = np.random.choice(
+            self.tap_values, size=agents[self.ns : self.ns + self.nt].shape
+        )
+        for index, shunt_values in enumerate(self.shunt_values):
+            agents[self.ng + self.nt + index, :] = np.random.choice(
+                shunt_values, size=agents[self.ns + self.nt + index, :].shape
+            )
+
+        return agents
+
     def orpd_objective_function(
         self,
         agents: np.ndarray,
@@ -388,12 +426,12 @@ class PowerSystemManager:
         obj_fun_array = np.zeros(shape=(agents.shape[1]), dtype=np.float32)
 
         # Transpose agents because each column represents an agent
-        for index, agent in enumerate(agents.T):
-
+        agents_transposed = agents.copy().T
+        for index, agent in enumerate(agents_transposed):
             # Update the network
-            self.insert_voltages_from_agent(agent)
-            self.insert_taps_from_agent(agent)
-            self.insert_shunts_from_agent(agent)
+            self.insert_voltages_from_agent(agent.copy())
+            self.insert_taps_from_agent(agent.copy())
+            self.insert_shunts_from_agent(agent.copy())
 
             # Run the Power Flow
             if kwargs["run_dc_power_flow"]:
@@ -406,10 +444,12 @@ class PowerSystemManager:
             self.insert_taps_on_agent(agent)
             self.insert_shunts_on_agent(agent)
 
+            agents_transposed[index] = agent
+
             # Get the sum of the active power losses of the lines
-            line_loss = self.network.res_line.pl_mw.sum()
+            line_loss = self.network.res_line.pl_mw.sum() / 100
             # Get the sum of the active power losses on the transformers
-            trafo_loss = self.network.res_trafo.pl_mw.sum()
+            trafo_loss = self.network.res_trafo.pl_mw.sum() / 100
 
             # Insert the objective funtion value
             loss = line_loss + trafo_loss
@@ -429,5 +469,7 @@ class PowerSystemManager:
         ] * penalty_functions["shunts"](
             agents[self.ng + self.nt :, :], self.shunt_values
         )
+
+        agents = agents_transposed.T
 
         return obj_fun_array

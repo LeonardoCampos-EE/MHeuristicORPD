@@ -4,9 +4,10 @@ system:
     tap_step: 0.00625
 orpd:
     run_dc_power_flow: False
-    voltage_penalty_lambda: 100.0
-    taps_penalty_lambda: 100.0
-    shunts_penalty_lambda: 100.0
+    voltage_penalty_lambda: 10.0
+    taps_penalty_lambda: 10.0
+    shunts_penalty_lambda: 10.0
 optimizer:
-    pop_size: 30
-    iterations: 10
+    pop_size: 12
+    iterations: 50
+runs: 2

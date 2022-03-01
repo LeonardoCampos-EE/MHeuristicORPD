@@ -23,29 +23,8 @@ class TestPowerSystemManager(unittest.TestCase):
 
     def test_first_agent(self):
 
-        expected = {
-            "v": np.array(
-                [
-                    [
-                        1.045,
-                        1.01,
-                        1.07,
-                        1.09,
-                    ]
-                ]
-            ),
-            "shunts": np.array([0.19]),
-            "taps": np.array(
-                [
-                    1.022,
-                    1.031,
-                    1.068,
-                ]
-            ),
-        }
+        expected = np.array([1.045, 1.01, 1.07, 1.09, 1.022, 1.031, 1.068, 0.19])
         first_agent = self.manager.first_agent
 
-        self.assertEqual(np.allclose(first_agent["v"], expected["v"]), True)
-        self.assertEqual(np.allclose(first_agent["taps"], expected["taps"]), True)
-        self.assertEqual(np.allclose(first_agent["shunts"], expected["shunts"]), True)
+        self.assertEqual(np.allclose(first_agent, expected), True)
         return

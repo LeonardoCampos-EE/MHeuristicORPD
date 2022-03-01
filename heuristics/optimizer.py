@@ -71,10 +71,13 @@ class Optimizer:
         # Random number generator
         self.random_gen = np.random.default_rng()
 
+        self.upper_bounds = np.tile(self.upper_bounds, (1, self.population_size))
+        self.lower_bounds = np.tile(self.lower_bounds, (1, self.population_size))
+
         # Randomly intializes the population array on the interval [lower_bounds, upper_bounds)
-        self.pop_array = (upper_bounds - lower_bounds) * self.random_gen.random(
-            size=(dim, population_size), dtype=np.float32
-        ) + lower_bounds
+        self.pop_array = (self.upper_bounds - self.lower_bounds) * np.random.uniform(
+            size=(dim, population_size)
+        ) + self.lower_bounds
 
         # Initialize the constraints function array
         if constraints is not None:
@@ -90,6 +93,10 @@ class Optimizer:
 
         # Initialize the fitness function array
         self.fitness_array = np.ones(shape=(1, population_size)) * np.inf
+
+        # Initialize the best solution array
+        self.best_solution = None
+        self.best_solution_fitness = None
 
         return
 
@@ -110,29 +117,3 @@ class Optimizer:
 
     def visualize_benchmark(self):
         raise NotImplementedError
-
-    def get_fitness_chart(self, title):
-
-        fig, ax = plt.subplots(1, facecolor="#293952")
-        ax.set_facecolor("#293952")
-
-        x = np.arange(0, len(self.best_fitness), step=1)
-        y = self.best_fitness
-
-        plt.plot(x, y, marker="o", markersize=4, color="#FDAC53", linewidth=1.5)
-
-        ax.tick_params(axis="both", colors="w")
-        plt.xticks(np.arange(0, np.max(x), step=5))
-        plt.yticks(np.arange(0, np.max(y), step=5))
-        plt.xlabel("Iterations", color="w", fontsize=16)
-        plt.ylabel("Fitness Function", color="w", fontsize=16)
-        plt.title(title, color="w", fontsize=16)
-
-        ax.spines["right"].set_visible(False)
-        ax.spines["top"].set_visible(False)
-        ax.spines["left"].set_color("w")
-        ax.spines["bottom"].set_color("w")
-
-        ax.set_axisbelow(True)
-        ax.yaxis.grid(color="#FDAC53", linestyle="dashed", alpha=0.5)
-        plt.show()
