@@ -12,14 +12,14 @@ if __name__ == "__main__":
 
     solution = 1.0
     gwo = GWO(
-        population_size=10,
+        population_size=20,
         dim=2,
         objective_function=rosen.function,
         lower_bounds=lower_bound,
         upper_bounds=upper_bound,
     )
-    while solution > 1e-2:
-        gwo.optimize(iterations=50)
+    while solution > 1e-3:
+        gwo.optimize(iterations=50, is_orpd=False)
         solution = gwo.best_fitness[-1]
 
     rosen.visualize_search(

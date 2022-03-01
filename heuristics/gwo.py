@@ -147,10 +147,11 @@ class GWO(Optimizer):
         print(
             f"Fitness = {np.min(self.best_fitness)}; Objective = {np.min(self.best_objective)}"
         )
-        for constraint_name in self.constraints.keys():
-            print(
-                f"Contraint {constraint_name} : {np.min(self.best_constraint[constraint_name])}"
-            )
+        if self.constraints is not None:
+            for constraint_name in self.constraints.keys():
+                print(
+                    f"Contraint {constraint_name} : {np.min(self.best_constraint[constraint_name])}"
+                )
 
         print(f"Best agent = {self.pop_array[:, self.alpha_index]}")
         print(f"Execution time = {execution_time}")

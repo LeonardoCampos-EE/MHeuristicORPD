@@ -246,7 +246,7 @@ class Rosenbrock(BenchmarkFunction):
         opacity=0.7,
         color="HSV",
         using_notebook=False,
-        frame_duration=1000,  # ms
+        frame_duration=500,  # ms
     ):
         # Enable Jupyter Notebook rendering
         # if using_notebook:
