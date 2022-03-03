@@ -34,6 +34,13 @@ class GWO(Optimizer):
         self.best_agents_list = []
         self.alpha_list = []
 
+        self.alpha_fitness = np.inf
+        self.beta_fitness = np.inf
+        self.delta_fitness = np.inf
+
+        self.alpha_objective = None
+        self.alpha_constraints = {}
+
         # Initialize the parameters of the best agent
         self.best_objective = []
         if self.constraints is not None:
@@ -41,7 +48,8 @@ class GWO(Optimizer):
                 contraint_name: [] for contraint_name in self.constraints
             }
         self.best_fitness = []
-        run_dc_power_flow = kwargs["run_dc_power_flow"]
+        if "run_dc_power_flow" in kwargs.keys():
+            run_dc_power_flow = kwargs["run_dc_power_flow"]
 
         np.clip(
             a=self.pop_array,
@@ -97,7 +105,7 @@ class GWO(Optimizer):
                         )
 
                 # Calculate the fitness function
-                if self.constraints is not None:
+                elif self.constraints is not None and kwargs["is_orpd"]:
                     self.fitness_array = self.objective_array.copy()
                     for constraint_name, constraint in self.constraint_arrays.items():
                         self.fitness_array += constraint
@@ -111,21 +119,46 @@ class GWO(Optimizer):
                 self.beta_index = sort_indexes[1]
                 self.delta_index = sort_indexes[2]
 
+                if self.fitness_array[self.alpha_index] <= self.alpha_fitness:
+                    self.alpha_wolf = np.expand_dims(
+                        self.pop_array[:, self.alpha_index], axis=-1
+                    )
+                    self.alpha_fitness = self.fitness_array[self.alpha_index]
+                    self.alpha_objective = self.objective_array[self.alpha_index]
+                    if self.constraints is not None:
+                        for (
+                            constraint_name,
+                            constraint_array,
+                        ) in self.constraint_arrays.items():
+                            self.alpha_constraints[constraint_name] = constraint_array[
+                                self.alpha_index
+                            ]
+
+                if self.fitness_array[self.beta_index] <= self.beta_fitness:
+                    self.beta_wolf = np.expand_dims(
+                        self.pop_array[:, self.beta_index], axis=-1
+                    )
+                    self.beta_fitness = self.fitness_array[self.beta_index]
+
+                if self.fitness_array[self.delta_index] <= self.delta_fitness:
+                    self.delta_wolf = np.expand_dims(
+                        self.pop_array[:, self.delta_index], axis=-1
+                    )
+                    self.delta_fitness = self.fitness_array[self.delta_index]
+
                 # Keep track of alpha's objective, penalty and fitness functions
-                self.best_fitness.append(self.fitness_array[self.alpha_index])
-                self.best_objective.append(self.objective_array[self.alpha_index])
+                self.best_fitness.append(self.alpha_fitness)
+                self.best_objective.append(self.alpha_objective)
                 if self.constraints is not None:
                     for (
                         constraint_name,
                         constraint_array,
                     ) in self.constraint_arrays.items():
                         self.best_constraint[constraint_name].append(
-                            constraint_array[self.alpha_index]
+                            self.alpha_constraints[constraint_name]
                         )
 
-                tq.set_description(
-                    f"Best fitness at t = {t}: {self.fitness_array[self.alpha_index]}"
-                )
+                tq.set_description(f"Best fitness at t = {t}: {self.alpha_fitness}")
 
                 # Update the agents positions
                 self.update_agents()
@@ -135,28 +168,30 @@ class GWO(Optimizer):
                     self.pop_list.append(
                         np.vstack([self.pop_array.copy(), self.fitness_array])
                     )
+
                     self.best_agents_list.append(
                         np.vstack(
                             [
-                                self.pop_array[
-                                    :,
+                                np.hstack(
                                     [
-                                        self.alpha_index,
-                                        self.beta_index,
-                                        self.delta_index,
-                                    ],
-                                ],
-                                self.fitness_array[
-                                    [
-                                        self.alpha_index,
-                                        self.beta_index,
-                                        self.delta_index,
+                                        self.alpha_wolf,
+                                        self.beta_wolf,
+                                        self.delta_wolf,
                                     ]
-                                ],
+                                ),
+                                np.array(
+                                    [
+                                        [
+                                            self.alpha_fitness,
+                                            self.beta_fitness,
+                                            self.delta_fitness,
+                                        ]
+                                    ]
+                                ),
                             ]
                         )
                     )
-                self.alpha_list.append(self.pop_array[:, self.alpha_index])
+                self.alpha_list.append(np.squeeze(self.alpha_wolf, axis=-1))
 
         # Execution time
         end_time = time.time()
@@ -181,21 +216,17 @@ class GWO(Optimizer):
 
         """
         Update the search agents positions
-
         """
-        alpha_wolf = np.expand_dims(self.pop_array[:, self.alpha_index], axis=-1)
-        beta_wolf = np.expand_dims(self.pop_array[:, self.beta_index], axis=-1)
-        delta_wolf = np.expand_dims(self.pop_array[:, self.delta_index], axis=-1)
 
         # Calculate D_alpha, D_beta, D_delta
-        D_alpha = np.abs(np.multiply(self.C, alpha_wolf) - self.pop_array)
-        D_beta = np.abs(np.multiply(self.C, beta_wolf) - self.pop_array)
-        D_delta = np.abs(np.multiply(self.C, delta_wolf) - self.pop_array)
+        D_alpha = np.abs(np.multiply(self.C, self.alpha_wolf) - self.pop_array)
+        D_beta = np.abs(np.multiply(self.C, self.beta_wolf) - self.pop_array)
+        D_delta = np.abs(np.multiply(self.C, self.delta_wolf) - self.pop_array)
 
         # Calculate X_alpha, X_beta, X_delta
-        X_alpha = alpha_wolf - np.multiply(self.A, D_alpha)
-        X_beta = beta_wolf - np.multiply(self.A, D_beta)
-        X_delta = delta_wolf - np.multiply(self.A, D_delta)
+        X_alpha = self.alpha_wolf - np.multiply(self.A, D_alpha)
+        X_beta = self.beta_wolf - np.multiply(self.A, D_beta)
+        X_delta = self.delta_wolf - np.multiply(self.A, D_delta)
 
         # Update population
         self.pop_array = (X_alpha + X_beta + X_delta) / 3.0

@@ -1,13 +1,13 @@
-name: "Experiment1"
+name: "ac_power_flow_14_bus"
 system:
     num_buses: 14
     tap_step: 0.00625
 orpd:
     run_dc_power_flow: False
-    voltage_penalty_lambda: 10.0
-    taps_penalty_lambda: 10.0
-    shunts_penalty_lambda: 10.0
+    voltage_penalty_lambda: 100.0
+    taps_penalty_lambda: 100.0
+    shunts_penalty_lambda: 100.0
 optimizer:
-    pop_size: 12
+    pop_size: 24
     iterations: 50
-runs: 2
+runs: 100

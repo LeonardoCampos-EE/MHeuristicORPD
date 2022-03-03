@@ -252,13 +252,13 @@ class PowerSystemManager:
     def get_upper_bounds(self) -> np.ndarray:
 
         voltage_upper = [
-            self.network.bus.max_vm_pu.to_numpy(dtype=np.float32)[0]
+            self.network.bus.max_vm_pu.to_numpy(dtype=np.float64)[0]
         ] * self.ng
         taps_upper = [np.max(self.tap_values)] * self.nt
         shunts_upper = [np.max(shunt_arr) for shunt_arr in self.shunt_values]
 
         upper_bounds = np.array(
-            [*voltage_upper, *taps_upper, *shunts_upper], dtype=np.float32
+            [*voltage_upper, *taps_upper, *shunts_upper], dtype=np.float64
         )
 
         # Convert from (n,) to (n, 1)
@@ -269,13 +269,13 @@ class PowerSystemManager:
     def get_lower_bounds(self) -> np.ndarray:
 
         voltage_lower = [
-            self.network.bus.min_vm_pu.to_numpy(dtype=np.float32)[0]
+            self.network.bus.min_vm_pu.to_numpy(dtype=np.float64)[0]
         ] * self.ng
         taps_lower = [np.min(self.tap_values)] * self.nt
         shunts_lower = [np.min(shunt_arr) for shunt_arr in self.shunt_values]
 
         lower_bounds = np.array(
-            [*voltage_lower, *taps_lower, *shunts_lower], dtype=np.float32
+            [*voltage_lower, *taps_lower, *shunts_lower], dtype=np.float64
         )
 
         # Convert from (n,) to (n, 1)
@@ -285,24 +285,24 @@ class PowerSystemManager:
 
     def get_first_agent(self):
 
-        v = self.network.gen.vm_pu.to_numpy(dtype=np.float32)
+        v = self.network.gen.vm_pu.to_numpy(dtype=np.float64)
         taps = 1 + (
             (
-                self.network.trafo.tap_pos.to_numpy(dtype=np.float32)[0 : self.nt]
-                + self.network.trafo.tap_neutral.to_numpy(dtype=np.float32)[0 : self.nt]
+                self.network.trafo.tap_pos.to_numpy(dtype=np.float64)[0 : self.nt]
+                + self.network.trafo.tap_neutral.to_numpy(dtype=np.float64)[0 : self.nt]
             )
             * (
-                self.network.trafo.tap_step_percent.to_numpy(dtype=np.float32)[
+                self.network.trafo.tap_step_percent.to_numpy(dtype=np.float64)[
                     0 : self.nt
                 ]
                 / 100
             )
         )
-        shunts = -self.network.shunt.q_mvar.to_numpy(dtype=np.float32) / 100
+        shunts = -self.network.shunt.q_mvar.to_numpy(dtype=np.float64) / 100
 
         import pdb
 
-        self.first_agent = np.concatenate([v, taps, shunts]).astype(np.float32)
+        self.first_agent = np.concatenate([v, taps, shunts]).astype(np.float64)
 
         return
 
@@ -336,7 +336,7 @@ class PowerSystemManager:
         return
 
     def insert_voltages_on_agent(self, agent: np.ndarray):
-        agent[: self.ng] = self.network.res_gen.vm_pu.to_numpy(dtype=np.float32)
+        agent[: self.ng] = self.network.res_gen.vm_pu.to_numpy(dtype=np.float64)
         return
 
     def insert_taps_on_agent(self, agent: np.ndarray):
@@ -352,7 +352,7 @@ class PowerSystemManager:
 
     def insert_shunts_on_agent(self, agent: np.ndarray):
         agent[self.ng + self.nt :] = self.network.res_shunt.q_mvar.to_numpy(
-            dtype=np.float32
+            dtype=np.float64
         ) / (-100)
 
         return
@@ -399,7 +399,7 @@ class PowerSystemManager:
             )
             * (self.network.trafo.tap_step_percent[: self.nt] / 100)
         )
-        shunts = self.network.res_shunt.q_mvar.to_numpy(dtype=np.float32) / (-100)
+        shunts = self.network.res_shunt.q_mvar.to_numpy(dtype=np.float64) / (-100)
 
         return bus_v, bus_ang, taps, shunts
 
@@ -423,7 +423,7 @@ class PowerSystemManager:
         **kwargs
     ) -> np.ndarray:
 
-        obj_fun_array = np.zeros(shape=(agents.shape[1]), dtype=np.float32)
+        obj_fun_array = np.zeros(shape=(agents.shape[1]), dtype=np.float64)
 
         # Transpose agents because each column represents an agent
         agents_transposed = agents.copy().T

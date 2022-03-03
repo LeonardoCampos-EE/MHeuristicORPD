@@ -144,6 +144,7 @@ class ExperimentRunner:
         self.runs_objective = []
 
         for run_number in range(self.runs):
+            # pdb.set_trace()
             print(f"------ Run #{run_number} ------")
             self.gwo.optimize(
                 self.experiment_parameters["optimizer"]["iterations"],
