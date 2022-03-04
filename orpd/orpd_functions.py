@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 
-def objective_function(network: pd.DataFrame, conductance_matrix: np.ndarray) -> float:
+def objective_function(network, conductance_matrix: np.ndarray) -> float:
     """
     Computes the objective function for the ORPD problem using a PandaPower network
     containing the parameters for a search agent and the conductance matrix.
@@ -15,7 +15,7 @@ def objective_function(network: pd.DataFrame, conductance_matrix: np.ndarray) ->
     """
 
     # Voltage array for all the system buses
-    v_k = np.expand_dims(network.bus.vm_pu.to_numpy(), axis=0)
+    v_k = np.expand_dims(network.res_bus.vm_pu.to_numpy(), axis=0)
 
     # Transposed voltage array
     v_m = v_k.T

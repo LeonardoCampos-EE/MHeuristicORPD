@@ -68,7 +68,8 @@ class GWO(Optimizer):
             for t in tqdm(range(iterations)):
 
                 # a(t) -> goes from 2 to 0 over the iterations
-                self.a = 2 - (t * (2.0 / iterations))
+                # self.a = 2 - (t * (2.0 / iterations))
+                self.a = 2*(1 - (t**2 / iterations**2))
 
                 # r1 and r2 -> random numbers between 0 and 1
                 self.r1 = np.random.random_sample(size=(self.dim, self.population_size))
@@ -85,7 +86,7 @@ class GWO(Optimizer):
                     self.objective_array = self.objective_function(self.pop_array)
                 else:
                     # ORPD case
-                    if run_dc_power_flow and t <= iterations / 2.0:
+                    if run_dc_power_flow and t <= iterations / 2.0 and t > 0:
                         kwargs["run_dc_power_flow"] = True
                     else:
                         kwargs["run_dc_power_flow"] = False

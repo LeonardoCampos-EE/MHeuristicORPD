@@ -1,6 +1,6 @@
-name: "ac_power_flow_14_bus"
+name: "ac_power_flow_30_bus_gwo_mod"
 system:
-    num_buses: 14
+    num_buses: 30
     tap_step: 0.00625
 orpd:
     run_dc_power_flow: False
@@ -8,6 +8,7 @@ orpd:
     taps_penalty_lambda: 100.0
     shunts_penalty_lambda: 100.0
 optimizer:
-    pop_size: 24
-    iterations: 50
-runs: 100
+    pop_size: 50
+    iterations: 100
+runs: 10
+

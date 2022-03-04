@@ -2,6 +2,7 @@ import pdb
 
 import pandapower as pp
 import numpy as np
+from orpd.orpd_functions import objective_function
 
 
 class PowerSystemManager:
@@ -357,7 +358,7 @@ class PowerSystemManager:
 
         return
 
-    def run_ac_power_flow(self, algorithm="nr", use_numba=True, enforce_q_lims=False):
+    def run_ac_power_flow(self, algorithm="fdbx", use_numba=True, enforce_q_lims=False):
 
         """
         Run an AC Power Flow for the network with the given algorithm
@@ -436,8 +437,16 @@ class PowerSystemManager:
             # Run the Power Flow
             if kwargs["run_dc_power_flow"]:
                 self.run_dc_power_flow()
+                line_loss = objective_function(self.network, self.conductance_matrix)
+                trafo_loss = 0.0
             else:
                 self.run_ac_power_flow()
+                # Get the sum of the active power losses of the lines
+                line_loss = self.network.res_line.pl_mw.sum() / 100
+                # Get the sum of the active power losses on the transformers
+                trafo_loss = self.network.res_trafo.pl_mw.sum() / 100
+
+            # pdb.set_trace()
 
             # Update the agent
             self.insert_voltages_on_agent(agent)
@@ -445,11 +454,6 @@ class PowerSystemManager:
             self.insert_shunts_on_agent(agent)
 
             agents_transposed[index] = agent
-
-            # Get the sum of the active power losses of the lines
-            line_loss = self.network.res_line.pl_mw.sum() / 100
-            # Get the sum of the active power losses on the transformers
-            trafo_loss = self.network.res_trafo.pl_mw.sum() / 100
 
             # Insert the objective funtion value
             loss = line_loss + trafo_loss
