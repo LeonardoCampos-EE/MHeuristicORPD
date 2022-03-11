@@ -3,6 +3,7 @@ import pdb
 import pandapower as pp
 import numpy as np
 from orpd.orpd_functions import objective_function
+from utils.math import approximate
 
 
 class PowerSystemManager:
@@ -311,28 +312,34 @@ class PowerSystemManager:
         self.network.gen.vm_pu = agent[: self.ng]
         return
 
-    def insert_taps_from_agent(self, agent: np.ndarray):
+    def insert_taps_from_agent(self, agent: np.ndarray, approx: bool):
         """
         The transformer taps should be inserted as position values, instead of
         their pu values. To convert from pu to position:
             tap_pos = [(tap_pu - 1)*100]/tap_step_percent] + tap_neutral
         """
+
+        taps = agent[self.ng : self.ng + self.nt].copy()
+        if approx:
+            taps = approximate(taps, self.tap_values)
+
         self.network.trafo.tap_pos[: self.nt] = self.network.trafo.tap_neutral[
             : self.nt
-        ] + (
-            (agent[self.ng : self.ng + self.nt] - 1.0)
-            * (100 / self.network.trafo.tap_step_percent[: self.nt])
-        )
+        ] + ((taps - 1.0) * (100 / self.network.trafo.tap_step_percent[: self.nt]))
         return
 
-    def insert_shunts_from_agent(self, agent: np.ndarray):
+    def insert_shunts_from_agent(self, agent: np.ndarray, approx: bool):
         """
         The shunt unit on the network is MVAr and it has a negative value
         To convert from pu to MVAr negative:
             mvar = pu * -100
 
         """
-        self.network.shunt.q_mvar = agent[self.ng + self.nt :] * (-100)
+        shunts = agent[self.ng + self.nt :].copy()
+        if approx:
+            shunts = approximate(shunts, self.shunt_values)
+
+        self.network.shunt.q_mvar = shunts * (-100)
 
         return
 
@@ -343,10 +350,15 @@ class PowerSystemManager:
     def insert_taps_on_agent(self, agent: np.ndarray):
         agent[self.ng : self.ng + self.nt] = 1 + (
             (
-                self.network.trafo.tap_pos[: self.nt]
-                - self.network.trafo.tap_neutral[: self.nt]
+                self.network.trafo.tap_pos[: self.nt].to_numpy(dtype=np.float64)
+                - self.network.trafo.tap_neutral[: self.nt].to_numpy(dtype=np.float64)
             )
-            * (self.network.trafo.tap_step_percent[: self.nt] / 100)
+            * (
+                self.network.trafo.tap_step_percent[: self.nt].to_numpy(
+                    dtype=np.float64
+                )
+                / 100
+            )
         )
 
         return
@@ -384,21 +396,26 @@ class PowerSystemManager:
         pp.rundcpp(self.network)
         return
 
-    def get_solution(self, agent: np.ndarray) -> tuple:
+    def get_solution(self, agent: np.ndarray, approx: bool) -> tuple:
 
         self.insert_voltages_from_agent(agent)
-        self.insert_taps_from_agent(agent)
-        self.insert_shunts_from_agent(agent)
+        self.insert_taps_from_agent(agent, approx=approx)
+        self.insert_shunts_from_agent(agent, approx=approx)
         self.run_ac_power_flow()
 
         bus_v = self.network.res_bus.vm_pu
         bus_ang = self.network.res_bus.va_degree
         taps = 1 + (
             (
-                self.network.trafo.tap_pos[: self.nt]
-                - self.network.trafo.tap_neutral[: self.nt]
+                self.network.trafo.tap_pos[: self.nt].to_numpy(dtype=np.float64)
+                - self.network.trafo.tap_neutral[: self.nt].to_numpy(dtype=np.float64)
             )
-            * (self.network.trafo.tap_step_percent[: self.nt] / 100)
+            * (
+                self.network.trafo.tap_step_percent[: self.nt].to_numpy(
+                    dtype=np.float64
+                )
+                / 100
+            )
         )
         shunts = self.network.res_shunt.q_mvar.to_numpy(dtype=np.float64) / (-100)
 
@@ -431,8 +448,8 @@ class PowerSystemManager:
         for index, agent in enumerate(agents_transposed):
             # Update the network
             self.insert_voltages_from_agent(agent.copy())
-            self.insert_taps_from_agent(agent.copy())
-            self.insert_shunts_from_agent(agent.copy())
+            self.insert_taps_from_agent(agent.copy(), approx=kwargs["approx"])
+            self.insert_shunts_from_agent(agent.copy(), approx=kwargs["approx"])
 
             # Run the Power Flow
             if kwargs["run_dc_power_flow"]:
@@ -446,12 +463,11 @@ class PowerSystemManager:
                 # Get the sum of the active power losses on the transformers
                 trafo_loss = self.network.res_trafo.pl_mw.sum() / 100
 
-            # pdb.set_trace()
-
             # Update the agent
             self.insert_voltages_on_agent(agent)
-            self.insert_taps_on_agent(agent)
-            self.insert_shunts_on_agent(agent)
+            if not kwargs["approx"]:
+                self.insert_taps_on_agent(agent)
+                self.insert_shunts_on_agent(agent)
 
             agents_transposed[index] = agent
 
@@ -464,15 +480,26 @@ class PowerSystemManager:
                 "voltage_penalty_lambda"
             ] * penalty_functions["voltage"](self.network)
 
-        penalty_array_dict["taps"] = kwargs["taps_penalty_lambda"] * penalty_functions[
-            "taps"
-        ](agents[self.ng : self.ng + self.nt, :], s=self.tap_step)
+        if not kwargs["approx"]:
+            penalty_array_dict["taps"] = kwargs[
+                "taps_penalty_lambda"
+            ] * penalty_functions["taps"](
+                agents[self.ng : self.ng + self.nt, :], s=self.tap_step
+            )
 
-        penalty_array_dict["shunts"] = kwargs[
-            "shunts_penalty_lambda"
-        ] * penalty_functions["shunts"](
-            agents[self.ng + self.nt :, :], self.shunt_values
-        )
+            penalty_array_dict["shunts"] = kwargs[
+                "shunts_penalty_lambda"
+            ] * penalty_functions["shunts"](
+                agents[self.ng + self.nt :, :], self.shunt_values
+            )
+        else:
+            penalty_array_dict["taps"] = 0.0 * penalty_functions["taps"](
+                agents[self.ng : self.ng + self.nt, :], s=self.tap_step
+            )
+
+            penalty_array_dict["shunts"] = 0.0 * penalty_functions["shunts"](
+                agents[self.ng + self.nt :, :], self.shunt_values
+            )
 
         agents = agents_transposed.T
 

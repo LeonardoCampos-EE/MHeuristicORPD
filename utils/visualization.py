@@ -162,3 +162,16 @@ def summary(solutions_dict):
     print(f"Best fitness: {solutions_dict['solution']['fitness']}")
     print(f"Best objective: {solutions_dict['solution']['objective']}")
     print(f"Best constraints: {solutions_dict['solution']['constraints']}")
+    print(f"Taps: {solutions_dict['solution']['taps']}")
+    print(f"Shunts: {solutions_dict['solution']['shunts']}")
+    print(
+        f"Time per iteration: {solutions_dict['solution']['time'] / solutions_dict['solution']['iterations']}"
+    )
+    print(f"Total time: {solutions_dict['solution']['time']}")
+
+    mean_obj = np.mean(solutions_dict["runs"]["objective"])
+    max_obj = np.max(solutions_dict["runs"]["objective"])
+    std_obj = np.std(solutions_dict["runs"]["objective"])
+    print(f"Mean Objective: {mean_obj}")
+    print(f"Max Objective: {max_obj}")
+    print(f"Std Objective: {std_obj}")

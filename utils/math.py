@@ -65,3 +65,18 @@ def lower_discrete(array: np.ndarray, interval: np.ndarray) -> np.ndarray:
     lower = np.take(interval, indices)
 
     return lower
+
+
+def approximate(array: np.ndarray, interval: np.ndarray) -> np.ndarray:
+
+    res = np.zeros_like(array)
+
+    interval_cp = interval.copy() if len(interval.shape) > 1 else np.expand_dims(interval.copy(), axis=-1)
+
+    for i, value in enumerate(array):
+        if interval.shape[0] > 1:
+            res[i] = interval_cp[i][np.abs(value - interval_cp[i]).argmin()]
+        else:
+            res[i] = interval_cp[0][np.abs(value - interval_cp[0]).argmin()]
+
+    return res

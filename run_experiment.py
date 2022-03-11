@@ -2,6 +2,7 @@ import os
 import pdb
 import yaml
 import pickle
+import argparse
 
 import numpy as np
 import pandas as pd
@@ -58,7 +59,7 @@ class ExperimentRunner:
 
         return penalty_fun_dict
 
-    def build_solutions_dictionary(self) -> dict:
+    def build_solutions_dictionary(self, save=True) -> dict:
 
         solutions_dict = {
             "solution": {
@@ -72,6 +73,8 @@ class ExperimentRunner:
                 "fitness_array": self.fitness_array,
                 "objective_array": self.objective_array,
                 "constraint_arrays": self.constraint_arrays,
+                "time": self.time,
+                "iterations": self.iterations,
             },
             "runs": {
                 "number": self.runs,
@@ -80,8 +83,9 @@ class ExperimentRunner:
             },
         }
 
-        with open(os.path.join(self.results_dir, "solutions.pkl"), "wb") as out:
-            pickle.dump(solutions_dict, out, protocol=pickle.HIGHEST_PROTOCOL)
+        if save:
+            with open(os.path.join(self.results_dir, "solutions.pkl"), "wb") as out:
+                pickle.dump(solutions_dict, out, protocol=pickle.HIGHEST_PROTOCOL)
 
         self.solutions_dict = solutions_dict
 
@@ -93,13 +97,17 @@ class ExperimentRunner:
             self.bus_angles,
             self.taps,
             self.shunts,
-        ) = self.manager.get_solution(agent)
+        ) = self.manager.get_solution(
+            agent, self.experiment_parameters["orpd"]["approx"]
+        )
         self.solution_fitness = self.gwo.solution_fitness
         self.solution_objective = self.gwo.solution_objective
         self.solution_constraints = self.gwo.solution_constraints
         self.fitness_array = self.gwo.best_fitness
         self.objective_array = self.gwo.best_objective
         self.constraint_arrays = self.gwo.best_constraint
+        self.time = self.gwo.time
+        self.iterations = self.gwo.iterations
 
         return
 
@@ -116,24 +124,24 @@ class ExperimentRunner:
 
     def load_solution(self, directory):
 
-        with open(directory, "solutions.pkl", "rb") as inp:
-            solutions_dict = pickle.loads(inp)
+        with open(os.path.join(directory, "solutions.pkl"), "rb") as inp:
+            solutions_dict = pickle.load(inp)
 
         self.bus_voltages = solutions_dict["solution"]["bus_voltages"]
         self.bus_angles = solutions_dict["solution"]["bus_angles"]
         self.taps = solutions_dict["solution"]["taps"]
         self.shunts = solutions_dict["solution"]["shunts"]
-        self.solution_fitness = solutions_dict["solution"]["solution_fitness"]
-        self.solution_objective = solutions_dict["solution"]["solution_objective"]
-        self.solution_constraints = solutions_dict["solution"]["solution_constraints"]
+        self.solution_fitness = solutions_dict["solution"]["fitness"]
+        self.solution_objective = solutions_dict["solution"]["objective"]
+        self.solution_constraints = solutions_dict["solution"]["constraints"]
         self.fitness_array = solutions_dict["solution"]["fitness_array"]
         self.objective_array = solutions_dict["solution"]["objective_array"]
         self.constraint_arrays = solutions_dict["solution"]["constraint_arrays"]
         self.runs = solutions_dict["runs"]["number"]
-        self.runs_fitness = solutions_dict["runs"]["runs_fitness"]
-        self.runs_objective = solutions_dict["runs"]["runs_objective"]
+        self.runs_fitness = solutions_dict["runs"]["fitness"]
+        self.runs_objective = solutions_dict["runs"]["objective"]
 
-        self.visualize()
+        summary(solutions_dict)
 
         return
 
@@ -161,6 +169,8 @@ class ExperimentRunner:
                 shunts_penalty_lambda=self.experiment_parameters["orpd"][
                     "shunts_penalty_lambda"
                 ],
+                mod=self.experiment_parameters["optimizer"]["mod"],
+                approx=self.experiment_parameters["orpd"]["approx"],
             )
 
             self.runs_fitness.append(self.gwo.solution_fitness)
@@ -177,5 +187,17 @@ class ExperimentRunner:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--run", action="store_true", help="Run the experiment")
+    parser.add_argument(
+        "--directory", type=str, help="Directory to visualize the results"
+    )
+    args = parser.parse_args()
+
     experiment_runner = ExperimentRunner()
-    experiment_runner.run()
+
+    if args.run:
+        experiment_runner.run()
+    else:
+        directory = args.directory
+        experiment_runner.load_solution(directory)

@@ -85,7 +85,7 @@ def shunts_sinusoidal_penalty(
 
     penalty = np.sin(alpha + np.pi * (shunts / delta))
     penalty = np.square(penalty)
-    penalty = np.where(penalty < 1e-5, 0.0, penalty)
+    penalty = np.where(penalty < 1e-12, 0.0, penalty)
     penalty = np.sum(penalty, axis=0)
 
     return penalty

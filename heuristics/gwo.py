@@ -40,6 +40,7 @@ class GWO(Optimizer):
 
         self.alpha_objective = None
         self.alpha_constraints = {}
+        self.iterations = iterations
 
         # Initialize the parameters of the best agent
         self.best_objective = []
@@ -68,8 +69,11 @@ class GWO(Optimizer):
             for t in tqdm(range(iterations)):
 
                 # a(t) -> goes from 2 to 0 over the iterations
-                # self.a = 2 - (t * (2.0 / iterations))
-                self.a = 2*(1 - (t**2 / iterations**2))
+                if (kwargs["mod"]):
+                    self.a = 2 * (1 - (t ** 2 / iterations ** 2))
+                else:
+                    self.a = 2 - (t * (2.0 / iterations))
+                    
 
                 # r1 and r2 -> random numbers between 0 and 1
                 self.r1 = np.random.random_sample(size=(self.dim, self.population_size))
@@ -196,7 +200,7 @@ class GWO(Optimizer):
 
         # Execution time
         end_time = time.time()
-        execution_time = end_time - start_time
+        self.time = end_time - start_time
 
         best_solution_iteration = np.argmin(self.best_fitness)
         self.solution = self.alpha_list[best_solution_iteration]
@@ -209,7 +213,7 @@ class GWO(Optimizer):
                     constraint_name
                 ][best_solution_iteration]
 
-        print(f"Execution time = {execution_time}")
+        print(f"Execution time = {self.time}")
 
         return
 
