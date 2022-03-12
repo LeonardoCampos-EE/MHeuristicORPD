@@ -3,7 +3,11 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-import plotly.graph_objects as go
+from matplotlib import rc
+
+
+rc("text", usetex=True)
+rc("font", **{"family": "serif", "serif": ["Computer Modern"]})
 
 
 def visualize_fitness(fitness_array, output_dir):
@@ -12,15 +16,14 @@ def visualize_fitness(fitness_array, output_dir):
     ax.set_facecolor("#FFFFFF")
 
     x = np.arange(0, len(fitness_array), step=1)
-    y = fitness_array
+    y = np.asarray(fitness_array) * 100
 
     plt.plot(x, y, marker="o", markersize=1, color="#219F94", linewidth=1.5)
 
     ax.tick_params(axis="both", colors="#0F0E0E")
     plt.xticks(np.arange(0, np.max(x) + 5, step=5))
-    plt.xlabel("Iterations", color="#0F0E0E", fontsize=16)
-    plt.ylabel("Fitness", color="#0F0E0E", fontsize=16)
-    plt.title(f"Fitness Function", color="#0F0E0E", fontsize=16)
+    plt.xlabel("Iterações", color="#0F0E0E", fontsize=14)
+    plt.ylabel(r"$FA(V, \theta, t, b^{sh})$", color="#0F0E0E", fontsize=14)
 
     ax.spines["right"].set_visible(False)
     ax.spines["top"].set_visible(False)
@@ -29,10 +32,8 @@ def visualize_fitness(fitness_array, output_dir):
 
     ax.set_axisbelow(True)
     plt.grid(True)
-    fig.savefig(
-        os.path.join(output_dir, "fitness.png"), bbox_inches="tight", pad_inches=0
-    )
-    plt.show()
+    fig.savefig(os.path.join(output_dir, "fitness.png"))
+    # plt.show()
 
 
 def visualize_objective(objective_array, output_dir):
@@ -41,15 +42,14 @@ def visualize_objective(objective_array, output_dir):
     ax.set_facecolor("#FFFFFF")
 
     x = np.arange(0, len(objective_array), step=1)
-    y = objective_array
+    y = np.asarray(objective_array) * 100
 
     plt.plot(x, y, marker="o", markersize=1, color="#219F94", linewidth=1.5)
 
     ax.tick_params(axis="both", colors="#0F0E0E")
     plt.xticks(np.arange(0, np.max(x) + 5, step=5))
-    plt.xlabel("Iterations", color="#0F0E0E", fontsize=16)
-    plt.ylabel("$f(V, \\theta, t) (MW)$", color="#0F0E0E", fontsize=16)
-    plt.title(f"Objective Function", color="#0F0E0E", fontsize=16)
+    plt.xlabel("Iterações", color="#0F0E0E", fontsize=14)
+    plt.ylabel(r"$f(V, \theta, t) (MW)$", color="#0F0E0E", fontsize=14)
 
     ax.spines["right"].set_visible(False)
     ax.spines["top"].set_visible(False)
@@ -58,13 +58,13 @@ def visualize_objective(objective_array, output_dir):
 
     ax.set_axisbelow(True)
     plt.grid(True)
-    fig.savefig(
-        os.path.join(output_dir, "objective.png"), bbox_inches="tight", pad_inches=0
-    )
-    plt.show()
+    fig.savefig(os.path.join(output_dir, "objective.png"))
+    # plt.show()
 
 
-def visualize_constraint(constraint_array, constraint_name, output_dir):
+def visualize_constraint(
+    constraint_array, constraint_name, constraint_text, output_dir
+):
 
     fig, ax = plt.subplots(1, facecolor="#FFFFFF")
     ax.set_facecolor("#FFFFFF")
@@ -76,9 +76,8 @@ def visualize_constraint(constraint_array, constraint_name, output_dir):
 
     ax.tick_params(axis="both", colors="#0F0E0E")
     plt.xticks(np.arange(0, np.max(x) + 5, step=5))
-    plt.xlabel("Iterations", color="#0F0E0E", fontsize=16)
-    plt.ylabel("Constraint", color="#0F0E0E", fontsize=16)
-    plt.title(f"Constraint {constraint_name}", color="#0F0E0E", fontsize=16)
+    plt.xlabel("Iterações", color="#0F0E0E", fontsize=14)
+    plt.ylabel(constraint_text, color="#0F0E0E", fontsize=14)
 
     ax.spines["right"].set_visible(False)
     ax.spines["top"].set_visible(False)
@@ -89,10 +88,8 @@ def visualize_constraint(constraint_array, constraint_name, output_dir):
     plt.grid(True)
     fig.savefig(
         os.path.join(output_dir, f"constraint_{constraint_name}.png"),
-        bbox_inches="tight",
-        pad_inches=0,
     )
-    plt.show()
+    # plt.show()
 
 
 def visualize_voltages(voltages, output_dir):
@@ -107,9 +104,8 @@ def visualize_voltages(voltages, output_dir):
 
     ax.tick_params(axis="both", colors="#0F0E0E")
     plt.xticks(x)
-    plt.xlabel("Bus", color="#0F0E0E", fontsize=16)
-    plt.ylabel("Voltage (pu)", color="#0F0E0E", fontsize=16)
-    plt.title(f"Voltage level", color="#0F0E0E", fontsize=16)
+    plt.xlabel("Barra", color="#0F0E0E", fontsize=14)
+    plt.ylabel(r"V (pu)", color="#0F0E0E", fontsize=14)
 
     ax.spines["right"].set_visible(False)
     ax.spines["top"].set_visible(False)
@@ -120,10 +116,8 @@ def visualize_voltages(voltages, output_dir):
     plt.grid(True)
     fig.savefig(
         os.path.join(output_dir, f"voltage.png"),
-        bbox_inches="tight",
-        pad_inches=0,
     )
-    plt.show()
+    # plt.show()
 
 
 def visualize_voltage_angles(angles, output_dir):
@@ -139,9 +133,8 @@ def visualize_voltage_angles(angles, output_dir):
     ax.tick_params(axis="both", colors="#0F0E0E")
     plt.xticks(x)
     plt.yticks(np.arange(np.min(y) - 0.5, np.max(y) + 0.5, step=0.5))
-    plt.xlabel("Bus", color="#0F0E0E", fontsize=16)
-    plt.ylabel("Voltage angle (°)", color="#0F0E0E", fontsize=16)
-    plt.title(f"Voltage angles", color="#0F0E0E", fontsize=16)
+    plt.xlabel("Barra", color="#0F0E0E", fontsize=14)
+    plt.ylabel(r"$\theta (^\circ)$", color="#0F0E0E", fontsize=14)
 
     ax.spines["right"].set_visible(False)
     ax.spines["top"].set_visible(False)
@@ -152,15 +145,13 @@ def visualize_voltage_angles(angles, output_dir):
     plt.grid(True)
     fig.savefig(
         os.path.join(output_dir, f"voltage_angles.png"),
-        bbox_inches="tight",
-        pad_inches=0,
     )
-    plt.show()
+    # plt.show()
 
 
 def summary(solutions_dict):
-    print(f"Best fitness: {solutions_dict['solution']['fitness']}")
-    print(f"Best objective: {solutions_dict['solution']['objective']}")
+    print(f"Best fitness: {solutions_dict['solution']['fitness']*100}")
+    print(f"Best objective: {solutions_dict['solution']['objective']*100}")
     print(f"Best constraints: {solutions_dict['solution']['constraints']}")
     print(f"Taps: {solutions_dict['solution']['taps']}")
     print(f"Shunts: {solutions_dict['solution']['shunts']}")
@@ -169,9 +160,9 @@ def summary(solutions_dict):
     )
     print(f"Total time: {solutions_dict['solution']['time']}")
 
-    mean_obj = np.mean(solutions_dict["runs"]["objective"])
-    max_obj = np.max(solutions_dict["runs"]["objective"])
-    std_obj = np.std(solutions_dict["runs"]["objective"])
-    print(f"Mean Objective: {mean_obj}")
+    mean_obj = np.mean(np.array(solutions_dict["runs"]["objective"])*100)
+    max_obj = np.max(np.array(solutions_dict["runs"]["objective"])*100)
+    std_obj = np.std(np.array(solutions_dict["runs"]["objective"])*100)
     print(f"Max Objective: {max_obj}")
-    print(f"Std Objective: {std_obj}")
+    print(f"Mean Objective: {mean_obj}")
+    print(f"Std Objective: {np.format_float_scientific(std_obj)}")

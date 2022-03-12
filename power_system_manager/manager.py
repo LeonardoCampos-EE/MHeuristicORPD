@@ -417,7 +417,7 @@ class PowerSystemManager:
                 / 100
             )
         )
-        shunts = self.network.res_shunt.q_mvar.to_numpy(dtype=np.float64) / (-100)
+        shunts = self.network.shunt.q_mvar.to_numpy(dtype=np.float64) / (-100)
 
         return bus_v, bus_ang, taps, shunts
 

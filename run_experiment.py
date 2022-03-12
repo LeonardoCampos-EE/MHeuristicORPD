@@ -47,6 +47,12 @@ class ExperimentRunner:
         self.gwo.pop_array = self.manager.initialize_agents(self.gwo.pop_array)
         self.gwo.pop_array[:, 0] = self.manager.first_agent
 
+        self.constraint_text = {
+            "voltage": r"$P_V(V_{V \in B_{CR}})$",
+            "taps": r"$P_{Sen}(t)$",
+            "shunts": r"$P_{Sen}(b^{sh})$",
+        }
+
         return
 
     def build_penalty_functions_dict(self) -> dict:
@@ -116,16 +122,23 @@ class ExperimentRunner:
         visualize_fitness(self.fitness_array, self.results_dir)
         visualize_objective(self.objective_array, self.results_dir)
         for constraint_name, constraint_array in self.constraint_arrays.items():
-            visualize_constraint(constraint_array, constraint_name, self.results_dir)
+            visualize_constraint(
+                constraint_array,
+                constraint_name,
+                self.constraint_text[constraint_name],
+                self.results_dir,
+            )
 
         visualize_voltages(self.bus_voltages, self.results_dir)
         visualize_voltage_angles(self.bus_angles, self.results_dir)
-        summary(self.solutions_dict)
+        # summary(self.solutions_dict)
 
     def load_solution(self, directory):
 
         with open(os.path.join(directory, "solutions.pkl"), "rb") as inp:
             solutions_dict = pickle.load(inp)
+
+        self.results_dir = directory
 
         self.bus_voltages = solutions_dict["solution"]["bus_voltages"]
         self.bus_angles = solutions_dict["solution"]["bus_angles"]
@@ -141,6 +154,7 @@ class ExperimentRunner:
         self.runs_fitness = solutions_dict["runs"]["fitness"]
         self.runs_objective = solutions_dict["runs"]["objective"]
 
+        self.visualize()
         summary(solutions_dict)
 
         return

@@ -1,15 +1,15 @@
-name: "30_bus_alg5"
+name: "50_bus_alg3"
 system:
-    num_buses: 30
+    num_buses: 57
     tap_step: 0.00625
 orpd:
     run_dc_power_flow: False
     voltage_penalty_lambda: 100.0
     taps_penalty_lambda: 100.0
     shunts_penalty_lambda: 100.0
-    approx: True
+    approx: False
 optimizer:
-    pop_size: 12
+    pop_size: 50
     iterations: 100
     mod: True
 runs: 20
