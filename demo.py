@@ -17,9 +17,10 @@ if __name__ == "__main__":
         objective_function=rosen.function,
         lower_bounds=lower_bound,
         upper_bounds=upper_bound,
+        
     )
     while solution > 1e-3:
-        gwo.optimize(iterations=50, is_orpd=False)
+        gwo.optimize(iterations=50, is_orpd=False, mod=True)
         solution = gwo.best_fitness[-1]
 
     rosen.visualize_search(

@@ -1,5 +1,6 @@
 import pdb
 
+import time
 import pandapower as pp
 import numpy as np
 from orpd.orpd_functions import objective_function
@@ -445,6 +446,8 @@ class PowerSystemManager:
 
         # Transpose agents because each column represents an agent
         agents_transposed = agents.copy().T
+
+
         for index, agent in enumerate(agents_transposed):
             # Update the network
             self.insert_voltages_from_agent(agent.copy())

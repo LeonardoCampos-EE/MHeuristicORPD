@@ -1,6 +1,6 @@
-name: "50_bus_alg3"
+name: "test"
 system:
-    num_buses: 57
+    num_buses: 14
     tap_step: 0.00625
 orpd:
     run_dc_power_flow: False
